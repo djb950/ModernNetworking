@@ -2,7 +2,22 @@ import XCTest
 @testable import ModernNetworking
 
 public class NetworkManagerMock: NetworkManagerProtocol {
-    public func buildRequest(requestMethod: ModernNetworking.HTTPMethod, endpoint: ModernNetworking.DummyEndpoint, headers: [String : String] = [:]) -> URLRequest? {
+    public func request<T, E>(endpoint: E, requestMethod: ModernNetworking.HTTPMethod, responseType: T.Type, customDecoder: JSONDecoder?, statusCodeActions: [ModernNetworking.HTTPStatusCode : ModernNetworking.HTTPStatusAction<T>] = [:]) async throws -> T? where T : Decodable, T : Encodable, T : Equatable, E : RawRepresentable, E.RawValue == String {
+        guard let request = buildRequest(requestMethod: requestMethod, endpoint: endpoint as! DummyEndpoint) else { return nil }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        if let response = response as? HTTPURLResponse {
+            do {
+                guard let statusCode = HTTPStatusCode(rawValue: response.statusCode) else { return nil }
+                return try handleRequestResponse(decoding: T.self, from: data, for: statusCode, with: customDecoder != nil ? customDecoder : nil, statusCodeActions: statusCodeActions)
+            } catch(let error) {
+                throw error
+            }
+        } else {
+            throw RequestError.unknown
+        }
+    }
+    
+    public func buildRequest<E: RawRepresentable>(requestMethod: ModernNetworking.HTTPMethod, endpoint: E, headers: [String : String] = [:]) -> URLRequest? where E.RawValue == String {
         let urlString = endpoint.rawValue
         guard var components = URLComponents(string: urlString) else { return nil }
         switch requestMethod {
@@ -121,20 +136,20 @@ public class NetworkManagerMock: NetworkManagerProtocol {
         }
     }
     
-    public func request<T>(endpoint: ModernNetworking.DummyEndpoint, requestMethod: ModernNetworking.HTTPMethod, responseType: T.Type, customDecoder: JSONDecoder? = nil, statusCodeActions: [ModernNetworking.HTTPStatusCode : ModernNetworking.HTTPStatusAction<T>] = [:]) async throws -> T? where T : Decodable, T : Encodable, T : Equatable {
-        guard let request = buildRequest(requestMethod: requestMethod, endpoint: endpoint) else { return nil }
-        let (data, response) = try await URLSession.shared.data(for: request)
-        if let response = response as? HTTPURLResponse {
-            do {
-                guard let statusCode = HTTPStatusCode(rawValue: response.statusCode) else { return nil }
-                return try handleRequestResponse(decoding: T.self, from: data, for: statusCode, with: customDecoder != nil ? customDecoder : nil, statusCodeActions: statusCodeActions)
-            } catch(let error) {
-                throw error
-            }
-        } else {
-            throw RequestError.unknown
-        }
-    }
+//    public func request<T>(endpoint: ModernNetworking.DummyEndpoint, requestMethod: ModernNetworking.HTTPMethod, responseType: T.Type, customDecoder: JSONDecoder? = nil, statusCodeActions: [ModernNetworking.HTTPStatusCode : ModernNetworking.HTTPStatusAction<T>] = [:]) async throws -> T? where T : Decodable, T : Encodable, T : Equatable {
+//        guard let request = buildRequest(requestMethod: requestMethod, endpoint: endpoint) else { return nil }
+//        let (data, response) = try await URLSession.shared.data(for: request)
+//        if let response = response as? HTTPURLResponse {
+//            do {
+//                guard let statusCode = HTTPStatusCode(rawValue: response.statusCode) else { return nil }
+//                return try handleRequestResponse(decoding: T.self, from: data, for: statusCode, with: customDecoder != nil ? customDecoder : nil, statusCodeActions: statusCodeActions)
+//            } catch(let error) {
+//                throw error
+//            }
+//        } else {
+//            throw RequestError.unknown
+//        }
+//    }
 }
 
 final class ModernNetworkingTests: XCTestCase {
@@ -150,7 +165,7 @@ final class ModernNetworkingTests: XCTestCase {
     }
     
     func testFetchCatFacts() async throws {
-        let catFacts = try await networkManagerMock?.request(endpoint: .catFacts, requestMethod: .get(queryItems: nil), responseType: [CatFact].self, customDecoder: nil)
+        let catFacts = try await networkManagerMock?.request(endpoint: DummyEndpoint.catFacts, requestMethod: .get(queryItems: nil), responseType: [CatFact].self, customDecoder: nil)
         XCTAssertNotNil(catFacts)
     }
 }

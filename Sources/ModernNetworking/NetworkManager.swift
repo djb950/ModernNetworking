@@ -7,12 +7,27 @@
 import Foundation
 
 public protocol NetworkManagerProtocol {
-    func request<T: Codable>(endpoint: DummyEndpoint, requestMethod: HTTPMethod, responseType: T.Type, customDecoder: JSONDecoder?, statusCodeActions: [HTTPStatusCode: HTTPStatusAction<T>]) async throws -> T?
-    func buildRequest(requestMethod: HTTPMethod, endpoint: DummyEndpoint, headers: [String:String]) -> URLRequest?
+    func request<T: Codable, E: RawRepresentable>(endpoint: E, requestMethod: HTTPMethod, responseType: T.Type, customDecoder: JSONDecoder?, statusCodeActions: [HTTPStatusCode: HTTPStatusAction<T>]) async throws -> T? where E.RawValue == String
+    func buildRequest<E: RawRepresentable>(requestMethod: HTTPMethod, endpoint: E, headers: [String:String]) -> URLRequest? where E.RawValue == String
     func handleRequestResponse<T: Codable>(decoding responseType: T.Type, from data: Data, for statusCode: HTTPStatusCode, with customDecoder: JSONDecoder?, statusCodeActions: [HTTPStatusCode: HTTPStatusAction<T>]) throws -> T
 }
 
 open class NetworkManager: NetworkManagerProtocol {
+    public func request<T: Codable, E: RawRepresentable>(endpoint: E, requestMethod: HTTPMethod, responseType: T.Type, customDecoder: JSONDecoder?, statusCodeActions: [HTTPStatusCode : HTTPStatusAction<T>]) async throws -> T? where E.RawValue == String {
+        guard let request = buildRequest(requestMethod: requestMethod, endpoint: endpoint as! DummyEndpoint) else { return nil }
+        let (data, response) = try await URLSession.shared.data(for: request)
+        if let response = response as? HTTPURLResponse {
+            do {
+                guard let statusCode = HTTPStatusCode(rawValue: response.statusCode) else { return nil }
+                return try handleRequestResponse(decoding: T.self, from: data, for: statusCode, with: customDecoder != nil ? customDecoder : nil, statusCodeActions: statusCodeActions)
+            } catch(let error) {
+                throw error
+            }
+        } else {
+            throw RequestError.unknown
+        }
+    }
+    
     
     // MARK: Helper functions
 
@@ -23,7 +38,7 @@ open class NetworkManager: NetworkManagerProtocol {
          - Parameter headers: A dictionary `[String:String]` of headers  to be added to the request
          - Returns: A `URLRequest` object, or nil if the request was not able to be built.
          */
-    public func buildRequest(requestMethod: HTTPMethod, endpoint: DummyEndpoint, headers: [String:String] = [:]) -> URLRequest? {
+    public func buildRequest<E: RawRepresentable>(requestMethod: HTTPMethod, endpoint: E, headers: [String:String] = [:]) -> URLRequest? where E.RawValue == String {
             let urlString = endpoint.rawValue
             guard var components = URLComponents(string: urlString) else { return nil }
             switch requestMethod {
@@ -162,18 +177,18 @@ open class NetworkManager: NetworkManagerProtocol {
          - Returns: The decoded `T` `Codable` type, nil if the request fails
          - Throws: A `RequestError` corresponding to why the request failed
          */
-        public func request<T: Codable>(endpoint: DummyEndpoint, requestMethod: HTTPMethod, responseType: T.Type, customDecoder: JSONDecoder? = nil, statusCodeActions: [HTTPStatusCode: HTTPStatusAction<T>] = [:]) async throws -> T? {
-            guard let request = buildRequest(requestMethod: requestMethod, endpoint: endpoint) else { return nil }
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let response = response as? HTTPURLResponse {
-                do {
-                    guard let statusCode = HTTPStatusCode(rawValue: response.statusCode) else { return nil }
-                    return try handleRequestResponse(decoding: T.self, from: data, for: statusCode, with: customDecoder != nil ? customDecoder : nil, statusCodeActions: statusCodeActions)
-                } catch(let error) {
-                    throw error
-                }
-            } else {
-                throw RequestError.unknown
-            }
-        }
+//    public func request<T: Codable, E: RawRepresentable>(endpoint: E, requestMethod: HTTPMethod, responseType: T.Type, customDecoder: JSONDecoder? = nil, statusCodeActions: [HTTPStatusCode: HTTPStatusAction<T>] = [:]) async throws -> T? where E.RawValue == Int {
+//        guard let request = buildRequest(requestMethod: requestMethod, endpoint: endpoint as! DummyEndpoint) else { return nil }
+//            let (data, response) = try await URLSession.shared.data(for: request)
+//            if let response = response as? HTTPURLResponse {
+//                do {
+//                    guard let statusCode = HTTPStatusCode(rawValue: response.statusCode) else { return nil }
+//                    return try handleRequestResponse(decoding: T.self, from: data, for: statusCode, with: customDecoder != nil ? customDecoder : nil, statusCodeActions: statusCodeActions)
+//                } catch(let error) {
+//                    throw error
+//                }
+//            } else {
+//                throw RequestError.unknown
+//            }
+//        }
 }
