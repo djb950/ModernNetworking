@@ -1,5 +1,5 @@
 # ModernNetworking
 
-This package is built to handle networking requests in Swift. It utilizes `async await` and Swift concurrency to handle networking in a modern, reusable way. More specifically, this package allows you to make network requests while specifying a desired `Codable` return type. 
+This package is built to concisely handle network requests in Swift, allowing for decoding of `Codable` types. Swift concurrency and `async await` patterns are used to manage networking in a succint, modern way. 
 
-In the current iteration of this package, only a response code of 200 is considered a successful request result. In future iterations, this will be expanded to allow more user customization of what should happen for different response code results.
+
