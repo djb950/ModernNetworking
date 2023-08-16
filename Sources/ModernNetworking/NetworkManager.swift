@@ -13,7 +13,20 @@ public protocol NetworkManagerProtocol {
 }
 
 open class NetworkManager: NetworkManagerProtocol {
-    public func request<T: Codable, E: RawRepresentable>(endpoint: E, requestMethod: HTTPMethod, responseType: T.Type, customDecoder: JSONDecoder?, statusCodeActions: [HTTPStatusCode : HTTPStatusAction<T>]) async throws -> T? where E.RawValue == String {
+    
+    // MARK: Main Request Method
+    
+    /**
+     This is the main method for making a network request. You must supply the HTTP request type, which endpoint you want to hit, and the a `Codable` response type. You may also supply a custom `JSONDecoder` for more granular control of the json decoding process, as well as status code actions for more granular control over what should happen for each http status code response.
+     - Parameter endpoint: A generic endpoint constrained to `RawRepresentable`. Generally endpoints are created as an enum with each case representing a different endpoint
+     - Parameter requestMethod: An `HTTPMethod` representing which kind of network request to make. i.e. GET, POST, etc.
+     - Parameter responseType: A generic type constrained to `Codable` This is the object that will be decoded from the network response
+     - Parameter customDecode: An optional `JSONDecoder` that allows more granular control over how the network response is decoded
+     - Parameter statusCodeActions: A dictionary of `HTTPStatusCode` objects as keys and `HTTPStatusAction` as values. Passing values in for this parameter gives allows for customization of what should happen for each http status code. Defaults to an empty dictionary
+     - Throws: A `RequestError` indicating why the request failed
+     - Returns: A generic, optional `Codable` object
+     */
+    public func request<T: Codable, E: RawRepresentable>(endpoint: E, requestMethod: HTTPMethod, responseType: T.Type, customDecoder: JSONDecoder?, statusCodeActions: [HTTPStatusCode : HTTPStatusAction<T>] = [:]) async throws -> T? where E.RawValue == String {
         guard let request = buildRequest(requestMethod: requestMethod, endpoint: endpoint as! DummyEndpoint) else { return nil }
         let (data, response) = try await URLSession.shared.data(for: request)
         if let response = response as? HTTPURLResponse {
@@ -27,7 +40,6 @@ open class NetworkManager: NetworkManagerProtocol {
             throw RequestError.unknown
         }
     }
-    
     
     // MARK: Helper functions
 
