@@ -2,7 +2,7 @@
 
 A Swift package for simplifying making networking requests and decoding 'Codable' objects.
 
-Decoding `Codable` objects have made it a lot simpler to decode JSON and make network requests on iOS platforms. Over the years of working on various iOS applications, a large portion of networking code can gets repeated. This package makes it simpler to configure and make networking requets and decode `Codable` objects.
+Decoding `Codable` objects have made it a lot simpler to decode JSON and make network requests on iOS platforms. Over the years of working on various iOS applications, a large portion of networking code can become repetitive. This package makes it simpler to configure and make networking requets and decode `Codable` objects.
 
 ## Usage
 
