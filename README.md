@@ -56,6 +56,11 @@ struct CatFact: Codable, Equatable {
 }
 
 // Network request
-let response = try await NetworkManager().request(endpoint: DummyEndpoint.catFacts, requestMethod: .get(queryItems: nil), responseType: [CatFact].self, customDecoder: nil, statusCodeActions: [:])
+let response = try await NetworkManager().request(
+    endpoint: DummyEndpoint.catFacts,
+    requestMethod: .get(queryItems: nil),
+    responseType: [CatFact].self,
+    customDecoder: nil, statusCodeActions: [:]
+)
 
 
