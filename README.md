@@ -6,7 +6,25 @@ Decoding `Codable` objects have made it a lot simpler to decode JSON and make ne
 
 ## Usage
 
-Simply call the `NetworkManager.request` method. This method takes in an endpoint parameter, which is a generic parameter constrained to `RawRepresentable`. A good way to do this is to have an enum representing the different endpoints of whatever backend you want to hit. You can specify the HTTP request method. Currently only GET and POST are supported. For a GET request, you may supply query items, or for a POST request, you can supply a request body. You will also need to supply the responseType that you want to decode. This is also a generic parameter constrained to `Codable`. You also can supply a custom `JSONDecoder`, otherwise it will default to the default `JSONDecoder`. This package allows you to also supply actions for each HTTP status code, allowing for custom behavior for certain response codes. If you do not supply any of these, a 200 code will be considered a successful result, and everything else is considered a failed result.
+Simply call the `NetworkManager.request` method. 
+
+### Parameters
+
+`endpoint`
+A generic endpoint constrained to `RawRepresentable`. A good way to do this is to have an enum representing the different endpoints
+
+`requestMethod`
+The HTTP request method. Currently only GET and POST are supported. Query items/request body can be supplied as well
+
+`responseType`
+A generic object constrained to `Codable`
+
+`customDecoder`
+Used to allow more granular control over decoding behavior. Optional
+
+`statusCodeActions`
+Allows for customization of what should take place for each HTTP status code. Defaults to an emptyy dictionary with the assumption that a 200 is successful and any other status code is a failed result
+
 ```
 // Enum representing the endpoints to hit
 enum DummyEndpoint: String {
@@ -38,6 +56,6 @@ struct CatFact: Codable, Equatable {
 }
 
 // Network request
-let response = try await NetworkManager().request(endpoint: DummyEndpoint.catFacts, requestMethod: .get(queryItems: nil), responseType: [CatFact].self, customDecoder: nil)
+let response = try await NetworkManager().request(endpoint: DummyEndpoint.catFacts, requestMethod: .get(queryItems: nil), responseType: [CatFact].self, customDecoder: nil, statusCodeActions: [:])
 
 
