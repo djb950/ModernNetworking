@@ -20,10 +20,10 @@ The HTTP request method. Currently only GET and POST are supported. Query items/
 A generic object constrained to `Codable`
 
 `customDecoder`
-Used to allow more granular control over decoding behavior. Optional
+An instance of `JSONDecoder`. Allows more granular control over decoding behavior. Optional
 
 `statusCodeActions`
-Allows for customization of what should take place for each HTTP status code. Defaults to an emptyy dictionary with the assumption that a 200 is successful and any other status code is a failed result
+A dictionary of `[HTTPStatusCode : HTTPStatusAcrtion<T>]`. Allows for customization of what action should take place for each HTTP status code. Defaults to an empty dictionary with the assumption that a 200 is successful and any other status code is a failed result
 
 ```
 // Enum representing the endpoints to hit
